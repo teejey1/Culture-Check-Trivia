@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "246741027232",
+    "firebase_url": "https://culture-check-default-rtdb.firebaseio.com",
+    "project_id": "culture-check",
+    "storage_bucket": "culture-check.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:246741027232:android:36585de4732825a8457cc5",
+        "android_client_info": {
+          "package_name": "com.TechGodGames.CultureCheckTrivia"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCdFJW6k04Vz5Xs-wsKFwZrDbaReHPwIHE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
