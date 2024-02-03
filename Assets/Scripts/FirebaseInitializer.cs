@@ -1,38 +1,51 @@
-using UnityEngine;
 using Firebase;
-using Firebase.Extensions;
-using UnityEngine.SceneManagement;
+using Firebase.Firestore;
+using Firebase.Auth;
+using UnityEngine;
 
 public class FirebaseInitializer : MonoBehaviour
 {
-    public string nextSceneName = "LoginScene"; // Change to your next scene's name
+    public static FirebaseInitializer Instance { get; private set; }
+    private FirebaseFirestore database;
+    private FirebaseAuth auth;
 
-    void Start()
+    void Awake()
     {
-        FirebaseApp.CheckAndFixDependenciesAsync().ContinueWithOnMainThread(task =>
+        if (Instance == null)
         {
-            if (task.Exception != null)
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+            InitializeFirebase();
+        }
+        else if (Instance != this)
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    private void InitializeFirebase()
+    {
+        FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(task =>
+        {
+            var dependencyStatus = task.Result;
+            if (dependencyStatus == DependencyStatus.Available)
             {
-                Debug.LogError($"Could not resolve all Firebase dependencies: {task.Exception}");
-                // Optionally, you can add logic to handle initialization failure
-            }
-            else if (task.Result == DependencyStatus.Available)
-            {
-                // Firebase is ready for use here
-                FirebaseApp app = FirebaseApp.DefaultInstance;
-                OnFirebaseInitialized();
+                // Firebase Firestore initialization
+                database = FirebaseFirestore.DefaultInstance;
+                Debug.Log("Firebase Firestore is initialized and ready to use.");
+
+                // Firebase Authentication initialization
+                auth = FirebaseAuth.DefaultInstance;
+                Debug.Log("Firebase Auth is initialized and ready to use.");
+
+                // Optional: Add more initialization code for other Firebase services here, if needed
             }
             else
             {
-                Debug.LogError($"Could not resolve all Firebase dependencies: {task.Result}");
-                // Firebase Unity SDK is not safe to use here.
+                Debug.LogError($"Could not resolve all Firebase dependencies: {dependencyStatus}");
             }
         });
     }
 
-    private void OnFirebaseInitialized()
-    {
-        // Firebase is ready, transition to the next scene
-        SceneManager.LoadScene(nextSceneName);
-    }
+    // Optional: Implement additional methods related to Firestore and Auth operations
 }

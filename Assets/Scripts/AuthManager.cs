@@ -1,69 +1,77 @@
-using System.Collections;
-using Firebase;
 using Firebase.Auth;
-using Firebase.Extensions;
-using TMPro; // Using TextMeshPro
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
+using System; // For the Action delegate
+using Firebase.Extensions;
 
 public class AuthManager : MonoBehaviour
 {
-    public TMP_InputField emailInputField;  // Changed to TMP_InputField for TextMeshPro
-    public TMP_InputField passwordInputField;  // Changed to TMP_InputField for TextMeshPro
-    public Button signUpButton;
+    public static AuthManager Instance { get; private set; }
     private FirebaseAuth auth;
 
-    void Start()
+    void Awake()
     {
-        InitializeFirebase();
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+            InitializeFirebase();
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
-    private void InitializeFirebase()
+    void InitializeFirebase()
     {
-        FirebaseApp.CheckAndFixDependenciesAsync().ContinueWithOnMainThread(task =>
-        {
-            if (task.Exception != null)
-            {
-                Debug.LogError("Failed to initialize Firebase with the following errors: " + task.Exception.ToString());
-                return;
-            }
-            auth = FirebaseAuth.DefaultInstance;
+        auth = FirebaseAuth.DefaultInstance;
+    }
 
-            // Attach the listener here to ensure auth is initialized
-            signUpButton.onClick.AddListener(() => StartCoroutine(SignUpCoroutine(emailInputField.text, passwordInputField.text)));
+    public bool IsUserLoggedIn()
+    {
+        return auth.CurrentUser != null;
+    }
+
+    public void SignInWithEmailPassword(string email, string password, Action<bool, string> callback)
+    {
+        auth.SignInWithEmailAndPasswordAsync(email, password).ContinueWithOnMainThread(task =>
+        {
+            if (task.IsFaulted || task.IsCanceled)
+            {
+                Debug.LogError("SignInWithEmailPassword failed: " + task.Exception);
+                callback(false, task.Exception?.Message);
+            }
+            else
+            {
+                Debug.Log("SignInWithEmailPassword successful!");
+                callback(true, "Sign-in successful.");
+            }
         });
     }
 
-    private IEnumerator SignUpCoroutine(string email, string password)
+    // Removed the username parameter as it's not used for Firebase Auth email/password sign-up
+    public void SignUpWithEmailPassword(string email, string password, Action<bool, string> callback)
     {
-        if (auth == null)
+        auth.CreateUserWithEmailAndPasswordAsync(email, password).ContinueWithOnMainThread(task =>
         {
-            Debug.LogError("FirebaseAuth not initialized.");
-            yield break;
-        }
+            if (task.IsFaulted || task.IsCanceled)
+            {
+                Debug.LogError("SignUpWithEmailPassword failed: " + task.Exception);
+                callback(false, task.Exception?.Message);
+            }
+            else
+            {
+                Debug.Log("SignUpWithEmailPassword successful!");
+                callback(true, "Sign-up successful.");
+            }
+        });
+    }
 
-        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
-        {
-            Debug.LogError("Email and password fields cannot be empty.");
-            yield break;
-        }
-
-        var authTask = auth.CreateUserWithEmailAndPasswordAsync(email, password);
-
-        yield return new WaitUntil(() => authTask.IsCompleted);
-
-        if (authTask.Exception != null)
-        {
-            FirebaseException firebaseEx = authTask.Exception.GetBaseException() as FirebaseException;
-            AuthError errorCode = (AuthError)firebaseEx.ErrorCode;
-            Debug.LogError("SignUp failed with error: " + errorCode);
-            yield break;
-        }
-
-        FirebaseUser newUser = authTask.Result.User;
-        Debug.LogFormat("Firebase user created successfully: {0} ({1})", newUser.DisplayName, newUser.UserId);
-
-        SceneManager.LoadScene("NextSceneName"); // Replace with your scene name
+    public void SignOut()
+    {
+        auth.SignOut();
+        Debug.Log("User signed out successfully.");
+        SceneManager.LoadScene("LoginScene");
     }
 }
